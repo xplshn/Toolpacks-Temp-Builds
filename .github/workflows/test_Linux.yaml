@@ -10,7 +10,7 @@ jobs:
       name: Build On (x86_64-Linux)
       runs-on: ubuntu-latest
       permissions:
-        contents: write
+        contents: read
       
       steps:
         - name: Checkout repository
@@ -94,18 +94,20 @@ jobs:
 
         - name: Build Binaries (x86_64-Linux)
           if: env.SKIP_X86_64 != 'YES'
+          env:
+            GITHUB_TOKEN: "${{ github.token }}"
           run: |
             #presets
             set -x ; set +e
             #-------------#
             #Build 
             pushd "$(mktemp -d)" >/dev/null 2>&1
-            sudo podman exec -u "runner" "${BUILDER_ID}" bash -c '
+            sudo podman exec -u "runner" -e GITHUB_REPOSITORY="${GITHUB_REPOSITORY}" -e GITHUB_TOKEN="${GITHUB_TOKEN}" "${BUILDER_ID}" bash -c '
             set +e ; set -x
             #Setup ENV_VARS
                USER="$(whoami)" && export USER="${USER}"
                HOME="$(getent passwd ${USER} | cut -d: -f6)" && export HOME="${HOME}"
-               GITHUB_TOKEN="DUMMY_TOKEN" && export GITHUB_TOKEN="${GITHUB_TOKEN}"
+               #GITHUB_TOKEN="DUMMY_TOKEN" && export GITHUB_TOKEN="${GITHUB_TOKEN}" ; eget --rate
                SYSTMP="$(dirname $(mktemp -u))" && export SYSTMP="${SYSTMP}"
                mkdir -p "$HOME/.config/rclone" && echo "NOPE" > "$HOME/.config/rclone/rclone.conf"
                USER_AGENT="$(curl -qfsSL 'https://pub.ajam.dev/repos/Azathothas/Wordlists/Misc/User-Agents/ua_chrome_macos_latest.txt')" && export USER_AGENT="$USER_AGENT"
@@ -114,11 +116,15 @@ jobs:
                #bash <(curl -qfsSL "https://raw.githubusercontent.com/Azathothas/Toolpacks/main/.github/scripts/$(uname -m)_$(uname -s)/init_debian.sh")
                sudo chown "${USER}:docker" "/var/run/docker.sock"
                sudo chown -R "${USER}:docker" "/var/run/docker"
-               source <(curl -qfsSL "https://raw.githubusercontent.com/Azathothas/Toolpacks/main/.github/scripts/$(uname -m)_Linux/env.sh")
+               source <(curl -qfsSL "https://raw.githubusercontent.com/Azathothas/Toolpacks/main/.github/scripts/$(uname -m)_Linux/env.sh") && sleep 10
                echo -e "\n\n\n" && env && echo -e "\n\n\n"
+               if ! sudo systemctl is-active --quiet docker; then
+                   sudo service docker restart >/dev/null 2>&1 ; sleep 10
+               fi
+               sudo systemctl status "docker.service" --no-pager
             #Build
                pushd "$($TMPDIRS)" >/dev/null 2>&1
-               git clone --filter "blob:none" "https://github.com/Azathothas/Toolpacks-Temp-Builds" && cd "./Toolpacks-Temp-Builds"
+               git clone --filter "blob:none" "https://github.com/${GITHUB_REPOSITORY}" && cd "./$(echo ${GITHUB_REPOSITORY} | cut -d'/' -f2)"
                bash "./build_on_$(uname -m)-$(uname -s).sh"
                echo -e "\n\n\n" && realpath "${BINDIR}" && ls "${BINDIR}" -lah
                echo -e "\n\n\n" && realpath "${BASEUTILSDIR}" && ls "${BASEUTILSDIR}" -lah
@@ -180,7 +186,7 @@ jobs:
         name: Build On (aarch64-Linux)
         runs-on: ubuntu-latest
         permissions:
-          contents: write
+          contents: read
 
         steps:
           - name: Checkout repository
@@ -261,18 +267,20 @@ jobs:
 
           - name: Build Binaries (aarch64-Linux)
             if: env.SKIP_AARCH64 != 'YES'
+            env:
+              GITHUB_TOKEN: "${{ github.token }}"
             run: |
               #presets
               set -x ; set +e
               #-------------#
               #Build 
               pushd "$(mktemp -d)" >/dev/null 2>&1
-              sudo podman exec -u "runner" "${BUILDER_ID}" bash -c '
+              sudo podman exec -u "runner" -e GITHUB_REPOSITORY="${GITHUB_REPOSITORY}" -e GITHUB_TOKEN="${GITHUB_TOKEN}" "${BUILDER_ID}" bash -c '
               set +e ; set -x
               #Setup ENV_VARS
                  USER="$(whoami)" && export USER="${USER}"
                  HOME="$(getent passwd ${USER} | cut -d: -f6)" && export HOME="${HOME}"
-                 GITHUB_TOKEN="DUMMY_TOKEN" && export GITHUB_TOKEN="${GITHUB_TOKEN}"
+                 #GITHUB_TOKEN="DUMMY_TOKEN" && export GITHUB_TOKEN="${GITHUB_TOKEN}" ; eget --rate
                  SYSTMP="$(dirname $(mktemp -u))" && export SYSTMP="${SYSTMP}"
                  mkdir -p "$HOME/.config/rclone" && echo "NOPE" > "$HOME/.config/rclone/rclone.conf"
                  USER_AGENT="$(curl -qfsSL 'https://pub.ajam.dev/repos/Azathothas/Wordlists/Misc/User-Agents/ua_chrome_macos_latest.txt')" && export USER_AGENT="$USER_AGENT"
@@ -281,11 +289,15 @@ jobs:
                  #bash <(curl -qfsSL "https://raw.githubusercontent.com/Azathothas/Toolpacks/main/.github/scripts/$(uname -m)_$(uname -s)/init_debian.sh")
                  sudo chown "${USER}:docker" "/var/run/docker.sock"
                  sudo chown -R "${USER}:docker" "/var/run/docker"
-                 source <(curl -qfsSL "https://raw.githubusercontent.com/Azathothas/Toolpacks/main/.github/scripts/$(uname -m)_Linux/env.sh")
+                 source <(curl -qfsSL "https://raw.githubusercontent.com/Azathothas/Toolpacks/main/.github/scripts/$(uname -m)_Linux/env.sh") && sleep 10
                  echo -e "\n\n\n" && env && echo -e "\n\n\n"
+                 if ! sudo systemctl is-active --quiet docker; then
+                     sudo service docker restart >/dev/null 2>&1 ; sleep 10
+                 fi
+                 sudo systemctl status "docker.service" --no-pager
               #Build
                  pushd "$($TMPDIRS)" >/dev/null 2>&1
-                 git clone --filter "blob:none" "https://github.com/Azathothas/Toolpacks-Temp-Builds" && cd "./Toolpacks-Temp-Builds"
+                 git clone --filter "blob:none" "https://github.com/${GITHUB_REPOSITORY}" && cd "./$(echo ${GITHUB_REPOSITORY} | cut -d'/' -f2)"
                  bash "./build_on_$(uname -m)-$(uname -s).sh"
                  echo -e "\n\n\n" && realpath "${BINDIR}" && ls "${BINDIR}" -lah
                  echo -e "\n\n\n" && realpath "${BASEUTILSDIR}" && ls "${BASEUTILSDIR}" -lah
@@ -324,7 +336,7 @@ jobs:
                  echo "HAS_RELEASE=$HAS_RELEASE" >> "${GITHUB_ENV}"
                  exit 1
               fi
-            continue-on-error: false
+            continue-on-error: true
     
           - name: Upload_ARTIFACTS-aarch64-Linux
             if: env.SKIP_AARCH64 != 'YES'
