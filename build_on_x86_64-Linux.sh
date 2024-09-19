@@ -21,9 +21,9 @@ fi
 ##Main
 export SKIP_BUILD="NO" #YES, in case of deleted repos, broken builds etc
 if [ "$SKIP_BUILD" == "NO" ]; then
-    #toru : Bittorrent streaming CLI tool. Stream anime torrents, real-time with no waiting for downloads
-     export BIN="toru"
-     export SOURCE_URL="https://github.com/sweetbbak/toru"
+    #kubo : InterPlanetary File System Implementation in GO
+     export BIN="kubo"
+     export SOURCE_URL="https://github.com/ipfs/kubo"
      echo -e "\n\n [+] (Building | Fetching) $BIN :: $SOURCE_URL\n"
       #Build (alpine-musl)
        pushd "$($TMPDIRS)" >/dev/null 2>&1
@@ -33,8 +33,8 @@ if [ "$SKIP_BUILD" == "NO" ]; then
         #Setup ENV
          mkdir -p "/build-bins" && pushd "$(mktemp -d)" >/dev/null 2>&1
         #Build
-         git clone --quiet --filter "blob:none" "https://github.com/sweetbbak/toru" && cd "./toru"
-         GOOS="linux" GOARCH="amd64" CGO_ENABLED="1" CGO_CFLAGS="-O2 -flto=auto -fPIE -fpie -static -w -pipe" go build -v -trimpath -buildmode="pie" -ldflags="-s -w -buildid= -linkmode=external -extldflags '\''-s -w -static-pie -Wl,--build-id=none'\''" "./cmd/toru"
+         git clone --quiet --filter "blob:none" "https://github.com/ipfs/kubo" && cd "./kubo"
+         GOOS="linux" GOARCH="amd64" CGO_ENABLED="1" CGO_CFLAGS="-O2 -flto=auto -fPIE -fpie -static -w -pipe" go build -v -trimpath -buildmode="pie" -ldflags="-s -w -buildid= -linkmode=external -extldflags '\''-s -w -static-pie -Wl,--build-id=none'\''" "./cmd/kubo"
         #strip & info
          find "." -maxdepth 1 -type f -exec file -i "{}" \; | grep "application/.*executable" | cut -d":" -f1 | xargs realpath | xargs -I {} cp --force {} /build-bins/
          popd >/dev/null 2>&1
